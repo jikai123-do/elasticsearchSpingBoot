@@ -12,12 +12,17 @@ import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.*;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -186,6 +191,27 @@ public class ElasticsearchController {
         System.out.println("批量删除索引成功");
         return  bulk;
 
+    }
+
+
+    @RequestMapping(value="/searchAllIndex",name="获取所有索引")
+    public String searchAllIndex() throws IOException {
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+       // searchSourceBuilder.query(QueryBuilders.matchAllQuery());//设置搜索规则，获取当前所有索引
+       //  searchSourceBuilder.query(QueryBuilders.matchQuery("adress","中华人民共和国"));//进行分词查询
+        searchSourceBuilder.query(QueryBuilders.termQuery("adress","华"));//不进行分词查询，完全匹配
+        searchSourceBuilder.from(0);
+        searchSourceBuilder.size(100);//设置分页，如果不设置默认显示10条
+
+
+        SearchRequest searchRequest = new SearchRequest();
+          searchRequest.indices("elasticspringboot","myindex");//指定搜索索引名，可以指定多个
+        searchRequest.source(searchSourceBuilder);
+        SearchResponse search = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
+
+        System.out.println("获取所有索引成功");
+
+        return search.toString();
     }
 
 

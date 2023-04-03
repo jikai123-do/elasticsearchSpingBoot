@@ -3,10 +3,13 @@ package com.iotek.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iotek.pojo.Student;
+import org.elasticsearch.action.bulk.BulkItemRequest;
+import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.get.*;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -98,7 +101,7 @@ public class ElasticsearchController {
 
 
 
-    @RequestMapping(value="/deleteIndex",name="更新索引")
+    @RequestMapping(value="/deleteIndex",name="删除索引")
     public DeleteResponse deleteIndex() throws IOException {
         DeleteRequest deleteRequest = new DeleteRequest();
         deleteRequest.index("elasticspringboot");
@@ -107,6 +110,81 @@ public class ElasticsearchController {
         DeleteResponse delete = restHighLevelClient.delete(deleteRequest, RequestOptions.DEFAULT);
         System.out.println("删除索引成功");
         return  delete;
+
+    }
+
+
+
+    @RequestMapping(value="/bulkAddIndex",name="批量增加索引")
+    public void bulkAddIndex() throws IOException {
+        BulkRequest bulkRequest = new BulkRequest();
+        for (int i=0;i<10;i++){
+            IndexRequest indexRequest = new IndexRequest();
+            indexRequest.index("elasticspringboot");
+            indexRequest.id(""+i);
+            Student student=new Student(i,"zhangsanfeng"+i,"wudang"+i);
+            String s = new ObjectMapper().writeValueAsString(student);
+            indexRequest.source(s, XContentType.JSON);
+           bulkRequest.add(indexRequest);
+        }
+
+        BulkResponse bulk = restHighLevelClient.bulk(bulkRequest,RequestOptions.DEFAULT );
+
+        for (BulkItemResponse bulkItemResponse:bulk){
+            System.out.println(bulkItemResponse.getIndex()+"====="+bulkItemResponse.getId());
+
+        }
+        System.out.println("批量增加索引成功");
+
+
+    }
+
+
+    @RequestMapping(value="/multiGetIndex",name="批量获取索引")
+    public void multiGetIndex() throws IOException {
+        MultiGetRequest request = new MultiGetRequest();
+        request.add("elasticspringboot","1");
+        request.add("elasticspringboot","2");
+        request.add("elasticspringboot","3");
+
+        MultiGetResponse multiGetItemResponses = restHighLevelClient.multiGet(request, RequestOptions.DEFAULT);
+
+        for (MultiGetItemResponse multi:multiGetItemResponses){
+            System.out.println(multi.getIndex()+"====="+multi.getId()+multi.getResponse().getSourceAsString());
+
+        }
+        System.out.println("批量获取索引成功");
+
+
+    }
+
+
+
+
+    @RequestMapping(value="/bulkDeleteIndex",name="批量删除索引")
+    public BulkResponse bulkDeleteIndex() throws IOException {
+        BulkRequest bulkRequest = new BulkRequest();
+
+        DeleteRequest deleteRequest = new DeleteRequest();
+        deleteRequest.index("elasticspringboot");
+        deleteRequest.id("1");
+        bulkRequest.add(deleteRequest);
+
+        DeleteRequest deleteRequest2 = new DeleteRequest();
+        deleteRequest2.index("elasticspringboot");
+        deleteRequest2.id("2");
+        bulkRequest.add(deleteRequest2);
+
+        DeleteRequest deleteRequest3 = new DeleteRequest();
+        deleteRequest3.index("elasticspringboot");
+        deleteRequest3.id("3");
+        bulkRequest.add(deleteRequest3);
+
+
+        BulkResponse bulk = restHighLevelClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+
+        System.out.println("批量删除索引成功");
+        return  bulk;
 
     }
 

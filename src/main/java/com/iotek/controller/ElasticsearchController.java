@@ -23,6 +23,10 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
+import org.elasticsearch.search.sort.FieldSortBuilder;
+import org.elasticsearch.search.sort.ScoreSortBuilder;
+import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -197,15 +201,40 @@ public class ElasticsearchController {
     @RequestMapping(value="/searchAllIndex",name="获取所有索引")
     public String searchAllIndex() throws IOException {
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+
+
+        //搜索全部、分词搜索和非分词搜索
        // searchSourceBuilder.query(QueryBuilders.matchAllQuery());//设置搜索规则，获取当前所有索引
-       //  searchSourceBuilder.query(QueryBuilders.matchQuery("adress","中华人民共和国"));//进行分词查询
-        searchSourceBuilder.query(QueryBuilders.termQuery("adress","华"));//不进行分词查询，完全匹配
+         searchSourceBuilder.query(QueryBuilders.matchQuery("adress","中华人民共和国"));//进行分词查询
+        //searchSourceBuilder.query(QueryBuilders.termQuery("adress","华"));//不进行分词查询，完全匹配
+
+       //分页
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(100);//设置分页，如果不设置默认显示10条
 
 
+        //排序
+        //searchSourceBuilder.sort(new ScoreSortBuilder().order(SortOrder.ASC));//按_socre升序排列,不指定排序时默认使用该策略排序
+       // searchSourceBuilder.sort(new FieldSortBuilder("name.keyword").order(SortOrder.ASC));//按字段排序
+
+        //源过滤
+      //  searchSourceBuilder.fetchSource(false);//设置源不显示，_source字段值不显示
+
+//        String [] include={"adress"};
+//        String [] exclude={"id","name"};
+//        searchSourceBuilder.fetchSource(include,exclude);//设置显示哪些列，不显示哪些列
+
+        //设置高亮显示
+        HighlightBuilder highlightBuilder = new HighlightBuilder();
+        highlightBuilder.preTags("<a href>");
+        highlightBuilder.postTags("</a>");
+        HighlightBuilder.Field adress = new HighlightBuilder.Field("adress");//为字段创建高光
+                               adress.highlighterType("unified");//设置高光类型
+         highlightBuilder.field(adress);
+        searchSourceBuilder.highlighter(highlightBuilder);
+
         SearchRequest searchRequest = new SearchRequest();
-          searchRequest.indices("elasticspringboot","myindex");//指定搜索索引名，可以指定多个
+        searchRequest.indices("elasticspringboot","myindex");//指定搜索索引名，可以指定多个
         searchRequest.source(searchSourceBuilder);
         SearchResponse search = restHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
 

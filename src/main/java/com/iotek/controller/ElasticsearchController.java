@@ -3,6 +3,10 @@ package com.iotek.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iotek.pojo.Student;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpRequest;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.util.EntityUtils;
 import org.elasticsearch.action.bulk.BulkItemRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -16,7 +20,9 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -32,6 +38,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -242,6 +249,37 @@ public class ElasticsearchController {
 
         return search.toString();
     }
+
+//    安装ik分词插件后测试性能--安装完以后需要重启一下es服务器， IK分词器有两种类型，分别是ik_smart 分词器和ik_max_word分词器。
+//    模拟客服机器人对问题的自动识别
+   @RequestMapping(value="/searchRobot",name="分词")
+    public String searchRobot() throws IOException {
+
+        String text="我要投诉618购买的手机" ;
+
+        Request request = new Request("GET","_analyze");
+        HashMap<String, Object> hashMap = new HashMap<>();
+        hashMap.put("analyzer","ik_max_word");
+        hashMap.put("text",text);
+        request.setJsonEntity(new ObjectMapper().writeValueAsString(hashMap));
+
+
+       Response response = restHighLevelClient.getLowLevelClient().performRequest(request);
+       HttpEntity entity = response.getEntity();
+       System.out.println( EntityUtils.toString(entity));
+//       {"tokens":[{"token":"我","start_offset":0,"end_offset":1,"type":"CN_CHAR","position":0},
+//           {"token":"要","start_offset":1,"end_offset":2,"type":"CN_CHAR","position":1},
+//           {"token":"投诉","start_offset":2,"end_offset":4,"type":"CN_WORD","position":2},
+//           {"token":"618","start_offset":4,"end_offset":7,"type":"ARABIC","position":3},
+//           {"token":"购买","start_offset":7,"end_offset":9,"type":"CN_WORD","position":4},
+//           {"token":"的","start_offset":9,"end_offset":10,"type":"CN_CHAR","position":5},
+//           {"token":"手机","start_offset":10,"end_offset":12,"type":"CN_WORD","position":6}]}
+
+       return  EntityUtils.toString(entity);
+  }
+
+
+
 
 
 }

@@ -1,4 +1,4 @@
-
+package com.iotek.util;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
